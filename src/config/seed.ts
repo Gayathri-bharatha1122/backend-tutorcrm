@@ -40,6 +40,17 @@ export const seedDatabase = async () => {
       phone: '14155550000'
     });
 
+    // Requested Admin Credentials
+    const thallaPass = await bcrypt.hash('12345678', salt);
+    await User.create({
+      email: 'thalladachakri@gmail.com',
+      passwordHash: thallaPass,
+      role: 'admin',
+      firstName: 'Chakri',
+      lastName: 'Thallada',
+      phone: '14155550009'
+    });
+
     // Tutor Alistair
     const tutorUser = await User.create({
       email: 'alistair.miller@edumanage.com',
