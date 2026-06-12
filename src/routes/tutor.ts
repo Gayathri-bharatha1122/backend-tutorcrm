@@ -34,7 +34,7 @@ router.get('/students', async (req: AuthRequest, res: Response) => {
 
     const studentData = students
       .map(s => {
-        const p = profiles.find(profile => profile.userId.toString() === s._id.toString());
+        const p = profiles.find(profile => profile.userId && profile.userId.toString() === s._id.toString());
         return {
           id: s._id,
           name: `${s.firstName} ${s.lastName}`,

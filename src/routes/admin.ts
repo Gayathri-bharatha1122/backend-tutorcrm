@@ -53,7 +53,7 @@ router.get('/students', async (req: AuthRequest, res: Response) => {
 
     // Map profile properties onto student user profiles
     const studentData = students.map(st => {
-      const profile = profiles.find(p => p.userId.toString() === st._id.toString());
+      const profile = profiles.find(p => p.userId && p.userId.toString() === st._id.toString());
       return {
         id: st._id,
         name: `${st.firstName} ${st.lastName}`,
@@ -180,7 +180,7 @@ router.get('/teachers', async (req: AuthRequest, res: Response) => {
     const profiles = await TutorProfile.find({}).lean();
 
     const tutorData = tutors.map(t => {
-      const p = profiles.find(profile => profile.userId.toString() === t._id.toString());
+      const p = profiles.find(profile => profile.userId && profile.userId.toString() === t._id.toString());
       return {
         id: t._id,
         name: `Prof. ${t.firstName} ${t.lastName}`,
@@ -530,8 +530,8 @@ router.get('/parents', async (req: AuthRequest, res: Response) => {
       const linkedProfiles = studentProfiles.filter(sp => sp.parentPhone === parent.phone);
 
       const linkedStudents = linkedProfiles.map(sp => {
-        const stuUser = studentUsers.find(u => u._id.toString() === sp.userId.toString());
-        const stuBills = allBills.filter(b => b.studentId === sp.userId.toString());
+        const stuUser = studentUsers.find(u => sp.userId && u._id.toString() === sp.userId.toString());
+        const stuBills = allBills.filter(b => sp.userId && b.studentId === sp.userId.toString());
         const outstandingDues = stuBills
           .filter(b => b.status === 'Pending' || b.status === 'Overdue')
           .reduce((sum: number, b: any) => sum + b.amount, 0);
@@ -567,8 +567,8 @@ router.get('/parents', async (req: AuthRequest, res: Response) => {
     studentProfiles.forEach(sp => {
       if (sp.parentPhone && !registeredParentPhones.has(sp.parentPhone)) {
         if (!unregisteredGroups[sp.parentPhone]) unregisteredGroups[sp.parentPhone] = [];
-        const stuUser = studentUsers.find(u => u._id.toString() === sp.userId.toString());
-        const stuBills = allBills.filter(b => b.studentId === sp.userId.toString());
+        const stuUser = studentUsers.find(u => sp.userId && u._id.toString() === sp.userId.toString());
+        const stuBills = allBills.filter(b => sp.userId && b.studentId === sp.userId.toString());
         const outstandingDues = stuBills
           .filter(b => b.status === 'Pending' || b.status === 'Overdue')
           .reduce((sum: number, b: any) => sum + b.amount, 0);
@@ -646,7 +646,7 @@ router.post('/parents', async (req: AuthRequest, res: Response) => {
     const studentProfiles = await StudentProfile.find({ parentPhone: sanitizedPhone }).lean();
     const studentUsers = await User.find({ role: 'student' }).lean();
     const linkedStudents = studentProfiles.map(sp => {
-      const su = studentUsers.find(u => u._id.toString() === sp.userId.toString());
+      const su = studentUsers.find(u => sp.userId && u._id.toString() === sp.userId.toString());
       return { studentId: sp.userId, name: su ? `${su.firstName} ${su.lastName}` : 'Unknown', grade: sp.grade };
     });
 
