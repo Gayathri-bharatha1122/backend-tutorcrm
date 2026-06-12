@@ -46,7 +46,11 @@ app.get('/status', (req, res) => {
   res.json({ status: 'HEALTHY', timestamp: new Date() });
 });
 
-// Start Server listener
-app.listen(PORT, () => {
-  console.log(`🚀 Tutor CRM Server running on port ${PORT}`);
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Tutor CRM Backend Running'
+  });
 });
+
+// Start Server listener
+export default app;
