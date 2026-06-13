@@ -148,9 +148,9 @@ export const seedDatabase = async () => {
 
     // 5. Create Courses
     await Course.create([
-      { name: 'Advanced General Physics', tutorName: 'Prof. Alistair Miller', tutorId: tutorUser._id, schedule: 'Tue, Thu at 3:00 PM', iconType: 'physics', progress: 84, room: 'Lab Hall 4B' },
-      { name: 'Calculus BC Intensive Course', tutorName: 'Sarah Jenkins', tutorId: adminUser._id, schedule: 'Mon, Wed at 4:30 PM', iconType: 'math', progress: 78, room: 'Seminar A' },
-      { name: 'AP Chemistry Honors Lab', tutorName: 'Dr. Evelyn Sterling', tutorId: adminUser._id, schedule: 'Fri at 2:00 PM', iconType: 'chem', progress: 91, room: 'Room 302' }
+      { name: 'Advanced General Physics', tutorName: 'Prof. Alistair Miller', tutorId: tutorUser._id, schedule: 'Tue, Thu at 3:00 PM', iconType: 'physics', progress: 84, room: 'Lab Hall 4B', status: 'Active', level: 'Grade 11-12' },
+      { name: 'Calculus BC Intensive Course', tutorName: 'Sarah Jenkins', tutorId: adminUser._id, schedule: 'Mon, Wed at 4:30 PM', iconType: 'math', progress: 78, room: 'Seminar A', status: 'Active', level: 'Grade 12' },
+      { name: 'AP Chemistry Honors Lab', tutorName: 'Dr. Evelyn Sterling', tutorId: adminUser._id, schedule: 'Fri at 2:00 PM', iconType: 'chem', progress: 91, room: 'Room 302', status: 'Active', level: 'Grade 11' }
     ]);
 
     // 6. Create Exam Schedules

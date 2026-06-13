@@ -109,6 +109,8 @@ export interface ICourse extends Document {
   iconType: 'math' | 'physics' | 'lit' | 'chem';
   progress: number;
   room?: string;
+  status: 'Active' | 'Upcoming' | 'Draft';
+  level: string;
 }
 
 const CourseSchema = new Schema<ICourse>({
@@ -118,7 +120,9 @@ const CourseSchema = new Schema<ICourse>({
   schedule: { type: String, required: true },
   iconType: { type: String, enum: ['math', 'physics', 'lit', 'chem'], required: true },
   progress: { type: Number, default: 60 },
-  room: { type: String, default: '' }
+  room: { type: String, default: '' },
+  status: { type: String, enum: ['Active', 'Upcoming', 'Draft'], default: 'Active' },
+  level: { type: String, default: 'Grade 11-12' }
 });
 
 const CourseRaw = mongoose.model<ICourse>('Course', CourseSchema);

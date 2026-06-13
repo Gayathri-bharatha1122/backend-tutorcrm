@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { authenticateToken, AuthRequest } from '../middlewares/auth';
-import { User, StudentProfile, TutorProfile, ActivityLog, Bill } from '../models';
+import { User, StudentProfile, TutorProfile, ActivityLog, Bill, Course } from '../models';
 
 const router = Router();
 
@@ -720,6 +720,52 @@ router.delete('/parents/:id', async (req: AuthRequest, res: Response) => {
     return res.json({ msg: 'Parent account deleted successfully.' });
   } catch (error) {
     console.error('Error deleting parent:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 18. GET ALL COURSES DIRECTORY
+router.get('/courses', async (req: AuthRequest, res: Response) => {
+  try {
+    const courses = await Course.find({}).lean();
+    return res.json(courses);
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 19. POST (ADD) COURSE
+router.post('/courses', async (req: AuthRequest, res: Response) => {
+  const { name, tutorId, schedule, iconType, level, status, room } = req.body;
+
+  if (!name || !tutorId || !schedule || !iconType) {
+    return res.status(400).json({ error: 'Course name, tutor, schedule, and icon type are required.' });
+  }
+
+  try {
+    const tutorUser = await User.findById(tutorId);
+    if (!tutorUser || tutorUser.role !== 'tutor') {
+      return res.status(400).json({ error: 'Selected tutor not found or is invalid.' });
+    }
+
+    const tutorName = `Prof. ${tutorUser.firstName} ${tutorUser.lastName}`;
+
+    const newCourse = await Course.create({
+      name,
+      tutorName,
+      tutorId,
+      schedule,
+      iconType,
+      level: level || 'Grade 11-12',
+      status: status || 'Active',
+      progress: 0,
+      room: room || ''
+    });
+
+    return res.status(201).json({ msg: 'Course created successfully.', course: newCourse });
+  } catch (error) {
+    console.error('Error creating course:', error);
     return res.status(500).json({ error: 'Internal server error.' });
   }
 });

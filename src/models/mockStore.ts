@@ -34,9 +34,9 @@ export const collections: Record<string, any[]> = {
     { _id: 'tp-tutor', userId: 'u-tutor', subject: 'Advanced Physics & Calculus', experience: '12 years', status: 'Active', courses: ['Physics Mechanics', 'Quantum Theory Basics', 'Calculus BC'], salaryStatus: 'Credited', attendance: '96%' }
   ],
   Course: [
-    { _id: 'c-physics', name: 'Advanced General Physics', tutorName: 'Prof. Alistair Miller', tutorId: 'u-tutor', schedule: 'Tue, Thu at 3:00 PM', iconType: 'physics', progress: 84, room: 'Lab Hall 4B' },
-    { _id: 'c-math', name: 'Calculus BC Intensive Course', tutorName: 'Sarah Jenkins', tutorId: 'u-admin', schedule: 'Mon, Wed at 4:30 PM', iconType: 'math', progress: 78, room: 'Seminar A' },
-    { _id: 'c-chem', name: 'AP Chemistry Honors Lab', tutorName: 'Dr. Evelyn Sterling', tutorId: 'u-admin', schedule: 'Fri at 2:00 PM', iconType: 'chem', progress: 91, room: 'Room 302' }
+    { _id: 'c-physics', name: 'Advanced General Physics', tutorName: 'Prof. Alistair Miller', tutorId: 'u-tutor', schedule: 'Tue, Thu at 3:00 PM', iconType: 'physics', progress: 84, room: 'Lab Hall 4B', status: 'Active', level: 'Grade 11-12' },
+    { _id: 'c-math', name: 'Calculus BC Intensive Course', tutorName: 'Sarah Jenkins', tutorId: 'u-admin', schedule: 'Mon, Wed at 4:30 PM', iconType: 'math', progress: 78, room: 'Seminar A', status: 'Active', level: 'Grade 12' },
+    { _id: 'c-chem', name: 'AP Chemistry Honors Lab', tutorName: 'Dr. Evelyn Sterling', tutorId: 'u-admin', schedule: 'Fri at 2:00 PM', iconType: 'chem', progress: 91, room: 'Room 302', status: 'Active', level: 'Grade 11' }
   ],
   ExamSchedule: [
     { _id: 'es-1', name: 'Electromagnetism Final Exam', date: 'June 05, 2026', time: '10:00 AM', location: 'Main Examination Quad', type: 'Midterm' },
