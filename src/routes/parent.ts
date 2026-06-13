@@ -169,8 +169,7 @@ router.post('/feedback', async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const parentUser = await User.findById(parentId);
-    const authorName = parentUser ? `${parentUser.firstName} ${parentUser.lastName}` : 'Parent';
+    const authorName = req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Parent';
     const submissionDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
 
     const newFeedback = await Feedback.create({

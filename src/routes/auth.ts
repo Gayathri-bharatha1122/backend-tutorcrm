@@ -224,24 +224,14 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
     return res.status(401).json({ error: 'User context not found.' });
   }
 
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User profile not found.' });
+  return res.json({
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      name: `${req.user.firstName} ${req.user.lastName}`
     }
-
-    return res.json({
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        name: `${user.firstName} ${user.lastName}`
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching current user:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
-  }
+  });
 });
 
 export default router;

@@ -138,8 +138,7 @@ router.post('/feedback', async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const studentUser = await User.findById(studentId);
-    const authorName = studentUser ? `${studentUser.firstName} ${studentUser.lastName}` : 'Student';
+    const authorName = req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Student';
     const submissionDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
 
     const newFeedback = await Feedback.create({
