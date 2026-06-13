@@ -20,12 +20,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect Database & run Seeder
+let isSeeded = false;
 const initApp = async () => {
   await connectDB();
-  await seedDatabase();
+  if (!isSeeded) {
+    await seedDatabase();
+    isSeeded = true;
+  }
 };
 
-initApp();
+initApp().catch((err) => {
+  console.error('❌ Application initialization failed:', err);
+});
 
 // Middlewares
 app.use(cors());
