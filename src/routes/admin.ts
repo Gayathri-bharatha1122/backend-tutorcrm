@@ -51,9 +51,16 @@ router.get('/students', async (req: AuthRequest, res: Response) => {
     const students = await User.find({ role: 'student' }).lean();
     const profiles = await StudentProfile.find({}).lean();
 
+    const profileMap = new Map();
+    profiles.forEach(p => {
+      if (p.userId) {
+        profileMap.set(p.userId.toString(), p);
+      }
+    });
+
     // Map profile properties onto student user profiles
     const studentData = students.map(st => {
-      const profile = profiles.find(p => p.userId && p.userId.toString() === st._id.toString());
+      const profile = profileMap.get(st._id.toString());
       return {
         id: st._id,
         name: `${st.firstName} ${st.lastName}`,
@@ -179,8 +186,15 @@ router.get('/teachers', async (req: AuthRequest, res: Response) => {
     const tutors = await User.find({ role: 'tutor' }).lean();
     const profiles = await TutorProfile.find({}).lean();
 
+    const profileMap = new Map();
+    profiles.forEach(p => {
+      if (p.userId) {
+        profileMap.set(p.userId.toString(), p);
+      }
+    });
+
     const tutorData = tutors.map(t => {
-      const p = profiles.find(profile => profile.userId && profile.userId.toString() === t._id.toString());
+      const p = profileMap.get(t._id.toString());
       return {
         id: t._id,
         name: `Prof. ${t.firstName} ${t.lastName}`,
@@ -525,13 +539,39 @@ router.get('/parents', async (req: AuthRequest, res: Response) => {
     // Get all bills to calculate outstanding dues per student
     const allBills = await Bill.find({}).lean();
 
+    const studentUserMap = new Map();
+    studentUsers.forEach(u => {
+      studentUserMap.set(u._id.toString(), u);
+    });
+
+    const billsMap = new Map();
+    allBills.forEach(b => {
+      if (b.studentId) {
+        const sid = b.studentId.toString();
+        if (!billsMap.has(sid)) {
+          billsMap.set(sid, []);
+        }
+        billsMap.get(sid).push(b);
+      }
+    });
+
+    const profilesByParentMap = new Map();
+    studentProfiles.forEach(sp => {
+      if (sp.parentPhone) {
+        if (!profilesByParentMap.has(sp.parentPhone)) {
+          profilesByParentMap.set(sp.parentPhone, []);
+        }
+        profilesByParentMap.get(sp.parentPhone).push(sp);
+      }
+    });
+
     const parentsData = parentUsers.map(parent => {
       // Match by phone: student's parentPhone === parent's phone
-      const linkedProfiles = studentProfiles.filter(sp => sp.parentPhone === parent.phone);
+      const linkedProfiles = profilesByParentMap.get(parent.phone) || [];
 
       const linkedStudents = linkedProfiles.map(sp => {
-        const stuUser = studentUsers.find(u => sp.userId && u._id.toString() === sp.userId.toString());
-        const stuBills = allBills.filter(b => sp.userId && b.studentId === sp.userId.toString());
+        const stuUser = sp.userId ? studentUserMap.get(sp.userId.toString()) : null;
+        const stuBills = sp.userId ? (billsMap.get(sp.userId.toString()) || []) : [];
         const outstandingDues = stuBills
           .filter(b => b.status === 'Pending' || b.status === 'Overdue')
           .reduce((sum: number, b: any) => sum + b.amount, 0);
@@ -567,8 +607,8 @@ router.get('/parents', async (req: AuthRequest, res: Response) => {
     studentProfiles.forEach(sp => {
       if (sp.parentPhone && !registeredParentPhones.has(sp.parentPhone)) {
         if (!unregisteredGroups[sp.parentPhone]) unregisteredGroups[sp.parentPhone] = [];
-        const stuUser = studentUsers.find(u => sp.userId && u._id.toString() === sp.userId.toString());
-        const stuBills = allBills.filter(b => sp.userId && b.studentId === sp.userId.toString());
+        const stuUser = sp.userId ? studentUserMap.get(sp.userId.toString()) : null;
+        const stuBills = sp.userId ? (billsMap.get(sp.userId.toString()) || []) : [];
         const outstandingDues = stuBills
           .filter(b => b.status === 'Pending' || b.status === 'Overdue')
           .reduce((sum: number, b: any) => sum + b.amount, 0);
