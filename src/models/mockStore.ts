@@ -6,11 +6,13 @@ const studentPass = bcrypt.hashSync('student123', salt);
 const parentPass = bcrypt.hashSync('parent123', salt);
 const tutorPass = bcrypt.hashSync('tutor123', salt);
 const adminPass = bcrypt.hashSync('admin123', salt);
+const thallaPass = bcrypt.hashSync('12345678', salt);
 
 // In-memory collections
 export const collections: Record<string, any[]> = {
   User: [
     { _id: 'u-admin', email: 'admin@edumanage.com', passwordHash: adminPass, role: 'admin', firstName: 'System', lastName: 'Administrator', phone: '14155550000', createdAt: new Date(), updatedAt: new Date() },
+    { _id: 'u-thalla', email: 'thalladachakri@gmail.com', passwordHash: thallaPass, role: 'admin', firstName: 'Chakri', lastName: 'Thallada', phone: '14155550009', createdAt: new Date(), updatedAt: new Date() },
     { _id: 'u-tutor', email: 'alistair.miller@edumanage.com', passwordHash: tutorPass, role: 'tutor', firstName: 'Alistair', lastName: 'Miller', phone: '14155550001', createdAt: new Date(), updatedAt: new Date() },
     { _id: 'u-marcus', email: 'marcus.thorne@edumail.com', passwordHash: studentPass, role: 'student', firstName: 'Marcus', lastName: 'Thorne', phone: '14155550218', createdAt: new Date(), updatedAt: new Date() },
     { _id: 'u-helena', email: 'helena.thorne@edumanage.com', passwordHash: parentPass, role: 'parent', firstName: 'Helena', lastName: 'Thorne', phone: '14155554921', createdAt: new Date(), updatedAt: new Date() },
