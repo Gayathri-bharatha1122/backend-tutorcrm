@@ -14,7 +14,7 @@ export const connectDB = async () => {
   }
 
   const isServerless = !!(process.env.VERCEL || process.env.NODE_ENV === 'production');
-  const timeoutMs = isServerless ? 15000 : 2000;
+  const timeoutMs = isServerless ? 5000 : 2000;
 
   try {
     await mongoose.connect(DATABASE_URL, {

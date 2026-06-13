@@ -13,6 +13,7 @@ import parentRoutes from './routes/parent';
 import messagesRoutes from './routes/messages';
 import aiRoutes from './routes/ai';
 import paymentRoutes from './routes/payment';
+import { dbMiddleware } from './middlewares/db';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ initApp().catch((err) => {
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(dbMiddleware);
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
