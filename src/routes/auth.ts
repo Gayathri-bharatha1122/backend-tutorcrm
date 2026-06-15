@@ -178,7 +178,7 @@ router.post('/login', async (req: Request, res: Response) => {
     // If student, check if pending approval
     if (role === 'student') {
       const studentProfile = await StudentProfile.findOne({ userId: user._id });
-      if (studentProfile && studentProfile.status === 'Pending') {
+      if (!studentProfile || studentProfile.status !== 'Active') {
         return res.status(403).json({ error: 'Your account is pending administrator approval. Please check back later.' });
       }
     }

@@ -6,6 +6,44 @@ const router = Router();
 
 router.use(authenticateToken);
 
+// Helper function to build a search regex based on tutor's subject & courses
+const getTutorSearchRegex = (tutorProfile: any) => {
+  const terms = new Set<string>();
+  
+  if (tutorProfile.courses) {
+    tutorProfile.courses.forEach((c: string) => {
+      const clean = c.trim().toLowerCase();
+      if (clean) terms.add(clean);
+      
+      const words = clean.split(/\s+/);
+      words.forEach(w => {
+        if (w.length > 3 && !['basics', 'theory', 'general', 'advanced', 'course', 'intensive', 'honors', 'prep', 'study', 'final', 'exam'].includes(w)) {
+          terms.add(w);
+        }
+      });
+    });
+  }
+  
+  if (tutorProfile.subject) {
+    const cleanSub = tutorProfile.subject.trim().toLowerCase();
+    terms.add(cleanSub);
+    const words = cleanSub.split(/[\s&]+/);
+    words.forEach(w => {
+      if (w.length > 3 && !['basics', 'theory', 'general', 'advanced', 'course', 'intensive', 'honors', 'prep', 'study', 'final', 'exam'].includes(w)) {
+        terms.add(w);
+      }
+    });
+  }
+  
+  if (terms.size === 0) {
+    return /^$/;
+  }
+
+  const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = Array.from(terms).map(t => escapeRegExp(t)).join('|');
+  return new RegExp(pattern, 'i');
+};
+
 // 1. FETCH TUTOR'S ASSIGNED STUDENTS
 router.get('/students', async (req: AuthRequest, res: Response) => {
   try {
@@ -16,34 +54,26 @@ router.get('/students', async (req: AuthRequest, res: Response) => {
       return res.json([]);
     }
 
-    const tutorSubjectLower = (tutorProfile.subject || '').toLowerCase();
-    const tutorCoursesLower = (tutorProfile.courses || []).map((c: string) => c.toLowerCase());
+    const searchRegex = getTutorSearchRegex(tutorProfile);
 
-    const isMatch = (studentSubject: string) => {
-      const subLower = (studentSubject || '').toLowerCase();
-      if (tutorSubjectLower.includes(subLower) || subLower.includes(tutorSubjectLower)) {
-        return true;
-      }
-      return tutorCoursesLower.some((course: string) => 
-        course.includes(subLower) || subLower.includes(course)
-      );
-    };
+    // Query matching student profiles first that are approved/active
+    const profiles = await StudentProfile.find({ learningGoal: searchRegex, status: 'Active' }).lean();
 
-    const students = await User.find({ role: 'student' }).lean();
-    const profiles = await StudentProfile.find({}).lean();
-
-    const studentData = students
-      .map(s => {
-        const p = profiles.find(profile => profile.userId && profile.userId.toString() === s._id.toString());
-        return {
+    // Fetch corresponding users one by one to support mock store compatibility (which doesn't support $in)
+    const studentData: any[] = [];
+    for (const p of profiles) {
+      if (!p.userId) continue;
+      const s = await User.findOne({ _id: p.userId }).lean();
+      if (s) {
+        studentData.push({
           id: s._id,
           name: `${s.firstName} ${s.lastName}`,
-          grade: p?.grade || '11th Grade',
-          subject: p?.learningGoal || 'Advanced Physics',
-          attendanceRate: p?.progress !== undefined ? p.progress : 95
-        };
-      })
-      .filter(s => isMatch(s.subject));
+          grade: p.grade || '11th Grade',
+          subject: p.learningGoal || 'Advanced Physics',
+          attendanceRate: p.progress !== undefined ? p.progress : 95
+        });
+      }
+    }
 
     return res.json(studentData);
   } catch (error) {
@@ -66,30 +96,31 @@ router.post('/attendance', async (req: AuthRequest, res: Response) => {
     if (!studentProfile) {
       return res.status(404).json({ error: 'Student profile not found.' });
     }
+    if (studentProfile.status !== 'Active') {
+      return res.status(403).json({ error: 'Student account is pending administrator approval.' });
+    }
 
     const tutorProfile = await TutorProfile.findOne({ userId: tutorId }).lean();
     if (!tutorProfile) {
       return res.status(403).json({ error: 'Tutor profile not found.' });
     }
 
-    const tutorSubjectLower = (tutorProfile.subject || '').toLowerCase();
-    const tutorCoursesLower = (tutorProfile.courses || []).map((c: string) => c.toLowerCase());
+    const searchRegex = getTutorSearchRegex(tutorProfile);
 
-    const isMatch = (studentSubject: string) => {
-      const subLower = (studentSubject || '').toLowerCase();
-      if (tutorSubjectLower.includes(subLower) || subLower.includes(tutorSubjectLower)) {
-        return true;
-      }
-      return tutorCoursesLower.some((course: string) => 
-        course.includes(subLower) || subLower.includes(course)
-      );
-    };
-
-    if (!isMatch(studentProfile.learningGoal)) {
+    if (!searchRegex.test(studentProfile.learningGoal || '')) {
       return res.status(403).json({ error: 'You can only mark attendance for students registered in your courses.' });
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const getKolkataDateString = () => {
+      const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' } as const;
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(new Date());
+      const year = parts.find(p => p.type === 'year')?.value;
+      const month = parts.find(p => p.type === 'month')?.value;
+      const day = parts.find(p => p.type === 'day')?.value;
+      return `${year}-${month}-${day}`;
+    };
+
+    const todayStr = req.body.date || getKolkataDateString();
 
     // Perform upsert for attendance status on student for today
     await Attendance.findOneAndUpdate(
@@ -127,6 +158,25 @@ router.post('/assignments/grade', async (req: AuthRequest, res: Response) => {
   }
 
   try {
+    const studentProfile = await StudentProfile.findOne({ userId: studentId });
+    if (!studentProfile) {
+      return res.status(404).json({ error: 'Student profile not found.' });
+    }
+    if (studentProfile.status !== 'Active') {
+      return res.status(403).json({ error: 'Student account is pending administrator approval.' });
+    }
+
+    const tutorProfile = await TutorProfile.findOne({ userId: req.user?.id }).lean();
+    if (!tutorProfile) {
+      return res.status(403).json({ error: 'Tutor profile not found.' });
+    }
+
+    const searchRegex = getTutorSearchRegex(tutorProfile);
+
+    if (!searchRegex.test(studentProfile.learningGoal || '')) {
+      return res.status(403).json({ error: 'You can only grade assignments for students registered in your courses.' });
+    }
+
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
     
     // Log exam result database record
