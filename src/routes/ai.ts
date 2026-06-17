@@ -1,11 +1,41 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request, NextFunction } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { authenticateToken, AuthRequest } from '../middlewares/auth';
 import { StudentProfile, Bill } from '../models';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_tutor_crm_jwt_token_key_123!';
+
+interface OptionalAuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: 'admin' | 'tutor' | 'student' | 'parent';
+    firstName: string;
+    lastName: string;
+    phone: string;
+  };
+}
+
+const optionalAuthenticateToken = (req: OptionalAuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as OptionalAuthRequest['user'];
+    req.user = decoded;
+    next();
+  } catch (error) {
+    next();
+  }
+};
 
 const router = Router();
 
-router.use(authenticateToken);
+router.use(optionalAuthenticateToken);
 
 // Fallback keyword FAQ matching engine in case Gemini API key is missing
 const fallbackQA = [
@@ -31,11 +61,11 @@ const fallbackQA = [
   }
 ];
 
-router.post('/chat', async (req: AuthRequest, res: Response) => {
+router.post('/chat', async (req: OptionalAuthRequest, res: Response) => {
   const { message, history } = req.body;
   const user = req.user;
 
-  if (!message || !user) {
+  if (!message) {
     return res.status(400).json({ error: 'Chat message prompt is required.' });
   }
 
@@ -59,20 +89,26 @@ router.post('/chat', async (req: AuthRequest, res: Response) => {
     const ai = new GoogleGenerativeAI(apiKey);
 
     // Build context prompt based on user role and database variables
-    let contextPrompt = `You are the EduManage CRM AI Assistant.
-    Current User Name: ${user.firstName} ${user.lastName}
-    Role: ${user.role}. `;
+    let contextPrompt = `You are the EduManage CRM AI Assistant. `;
 
-    if (user.role === 'student') {
-      const studentProfile = await StudentProfile.findOne({ userId: user.id });
-      contextPrompt += `Enrolled in Grade: ${studentProfile?.grade || '11th Grade'}. GPA Trend: ${studentProfile?.avgGrade || '3.8'}. Attendance Rate: ${studentProfile?.progress || '98'}%. Study Goal: ${studentProfile?.learningGoal || ''}.`;
-    } else if (user.role === 'parent') {
-      const studentProfile = await StudentProfile.findOne({ parentPhone: user.phone });
-      const unpaidBills = studentProfile 
-        ? await Bill.find({ studentId: studentProfile.userId, status: { $ne: 'Paid' } })
-        : [];
-      const outstandingAmt = unpaidBills.reduce((sum, b) => sum + b.amount, 0);
-      contextPrompt += `Linked Child: Marcus Thorne. Total Unpaid tuition fees balance: $${outstandingAmt}.`;
+    if (user) {
+      contextPrompt += `
+      Current User Name: ${user.firstName} ${user.lastName}
+      Role: ${user.role}. `;
+
+      if (user.role === 'student') {
+        const studentProfile = await StudentProfile.findOne({ userId: user.id });
+        contextPrompt += `Enrolled in Grade: ${studentProfile?.grade || '11th Grade'}. GPA Trend: ${studentProfile?.avgGrade || '3.8'}. Attendance Rate: ${studentProfile?.progress || '98'}%. Study Goal: ${studentProfile?.learningGoal || ''}.`;
+      } else if (user.role === 'parent') {
+        const studentProfile = await StudentProfile.findOne({ parentPhone: user.phone });
+        const unpaidBills = studentProfile 
+          ? await Bill.find({ studentId: studentProfile.userId, status: { $ne: 'Paid' } })
+          : [];
+        const outstandingAmt = unpaidBills.reduce((sum, b) => sum + b.amount, 0);
+        contextPrompt += `Linked Child: Marcus Thorne. Total Unpaid tuition fees balance: $${outstandingAmt}.`;
+      }
+    } else {
+      contextPrompt += `The user is currently a Guest/not logged in. `;
     }
 
     contextPrompt += `
