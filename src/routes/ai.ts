@@ -76,7 +76,8 @@ router.post('/chat', async (req: AuthRequest, res: Response) => {
     }
 
     contextPrompt += `
-    Use the above user info to answer inquiries accurately. Do not invent details.
+    Use the above user info to answer inquiries accurately when relevant. Do not invent details.
+    You are also a general-purpose AI assistant. Feel free to answer any other general questions asked by the user, without refusing to answer questions unrelated to the CRM.
     Answer concisely (under 4-5 sentences). Keep tone professional, supportive, and encouraging.`;
 
     const model = ai.getGenerativeModel({
